@@ -156,7 +156,11 @@ def main():
     
     # Sidebar
     with st.sidebar:
-        st.image("https://img.icons8.com/3d-fluency/94/security-shield-green.png", width=100)
+        # Display shield icon with error handling for external URL
+        try:
+            st.image("https://img.icons8.com/3d-fluency/94/security-shield-green.png", width=100)
+        except Exception:
+            st.markdown("🛡️")  # Fallback emoji if image fails to load
         
         # Language selector
         language = st.selectbox(
