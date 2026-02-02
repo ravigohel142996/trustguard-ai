@@ -3,6 +3,7 @@ TrustGuard AI - FastAPI Backend
 Purpose: Analyze text/links and return scam risk analysis
 """
 
+import hashlib
 import logging
 import random
 import re
@@ -122,8 +123,10 @@ def analyze_content(content: str, language: str) -> Dict:
     # Normalize content to lowercase for keyword matching
     content_lower = content.lower()
     
-    # Start with a random base score
-    base_score = random.randint(40, 90)
+    # Generate deterministic base score using content hash
+    # This ensures same content gets same base score while still appearing varied
+    content_hash = int(hashlib.md5(content.encode()).hexdigest()[:8], 16)
+    base_score = 40 + (content_hash % 51)  # Range: 40-90
     
     # Get appropriate keyword list
     keywords = RISK_KEYWORDS.get(language, RISK_KEYWORDS["en"])
@@ -275,7 +278,7 @@ def analyze(request: AnalyzeRequest):
             logger.warning(f"Invalid language requested: {request.language}")
             raise HTTPException(
                 status_code=400,
-                detail=f"Invalid language. Supported languages: en, hi"
+                detail="Invalid language. Supported languages: en, hi"
             )
         
         # Validate content length
@@ -297,7 +300,7 @@ def analyze(request: AnalyzeRequest):
         logger.error(f"Error during analysis: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=500,
-            detail=f"Internal server error during analysis"
+            detail="An error occurred while analyzing the content. Please try again."
         )
 
 # Error handlers
