@@ -52,6 +52,14 @@ logger = logging.getLogger(__name__)
 AWS_REGION = os.getenv('AWS_DEFAULT_REGION', 'us-east-1')
 BEDROCK_MODEL_ID = os.getenv('BEDROCK_MODEL_ID', 'anthropic.claude-3-haiku-20240307-v1:0')
 BEDROCK_TIMEOUT = int(os.getenv('BEDROCK_TIMEOUT', '30'))
+BEDROCK_MAX_TOKENS = int(os.getenv('BEDROCK_MAX_TOKENS', '500'))
+BEDROCK_TEMPERATURE = float(os.getenv('BEDROCK_TEMPERATURE', '0.3'))
+
+# Trust score constants
+TRUST_SCORE_DANGEROUS = 25
+TRUST_SCORE_SAFE = 75
+TRUST_SCORE_SUSPICIOUS = 50
+MAX_EXPLANATION_LENGTH = 500
 
 # Initialize Bedrock client with timeout configuration
 try:
@@ -160,6 +168,7 @@ class HealthResponse(BaseModel):
     """Response model for health endpoint"""
     status: str
     version: str
+    bedrock_available: bool = Field(default=False, description="Whether AWS Bedrock is available")
 
 def analyze_with_bedrock(content: str, language: str) -> Optional[Dict]:
     """
@@ -211,8 +220,8 @@ Be specific and concise in your analysis."""
         # Prepare request body for Claude model
         request_body = {
             "anthropic_version": "bedrock-2023-05-31",
-            "max_tokens": 500,
-            "temperature": 0.3,
+            "max_tokens": BEDROCK_MAX_TOKENS,
+            "temperature": BEDROCK_TEMPERATURE,
             "messages": [
                 {
                     "role": "user",
@@ -271,13 +280,13 @@ def parse_bedrock_response(response_text: str, language: str) -> Dict:
     response_lower = response_text.lower()
     if any(word in response_lower for word in ["dangerous", "high risk", "खतरनाक", "उच्च जोखिम"]):
         risk_level = "Dangerous"
-        trust_score = 25
+        trust_score = TRUST_SCORE_DANGEROUS
     elif any(word in response_lower for word in ["safe", "low risk", "सुरक्षित", "कम जोखिम"]):
         risk_level = "Safe"
-        trust_score = 75
+        trust_score = TRUST_SCORE_SAFE
     else:
         risk_level = "Suspicious"
-        trust_score = 50
+        trust_score = TRUST_SCORE_SUSPICIOUS
     
     # Extract category based on keywords in response
     if language == "hi":
@@ -311,8 +320,8 @@ def parse_bedrock_response(response_text: str, language: str) -> Dict:
         elif "romance" in response_lower:
             category = "Romance Scam"
     
-    # Clean up explanation - use first 500 chars
-    explanation = response_text.strip()[:500]
+    # Clean up explanation - use first MAX_EXPLANATION_LENGTH chars
+    explanation = response_text.strip()[:MAX_EXPLANATION_LENGTH]
     
     return {
         "trust_score": trust_score,
@@ -458,12 +467,13 @@ def read_root():
 def health_check():
     """
     Health check endpoint
-    Returns the current status and version of the API
+    Returns the current status, version, and Bedrock availability of the API
     """
     logger.info("Health check requested")
     return {
         "status": "healthy",
-        "version": "1.0.0"
+        "version": "1.0.0",
+        "bedrock_available": bedrock_runtime is not None
     }
 
 @app.post("/analyze", response_model=AnalyzeResponse, tags=["Analysis"])
