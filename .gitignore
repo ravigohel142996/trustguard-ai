@@ -43,3 +43,10 @@ Thumbs.db
 .pytest_cache/
 .coverage
 htmlcov/
+
+# AI Engine - FAISS Index (can be regenerated)
+backend/data/faiss_index/
+
+# Hugging Face cache
+.cache/
+huggingface/
