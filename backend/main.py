@@ -57,15 +57,6 @@ except ImportError as e:
     logger.warning(f"AI Engine not available: {e}")
     AI_ENGINE_AVAILABLE = False
 
-# Import AI Engine
-try:
-    from ai_engine import get_ai_engine
-    AI_ENGINE_AVAILABLE = True
-    logger.info("AI Engine imported successfully")
-except ImportError as e:
-    logger.warning(f"AI Engine not available: {e}")
-    AI_ENGINE_AVAILABLE = False
-
 # AWS Bedrock Configuration
 AWS_REGION = os.getenv('AWS_DEFAULT_REGION', 'us-east-1')
 BEDROCK_MODEL_ID = os.getenv('BEDROCK_MODEL_ID', 'anthropic.claude-3-haiku-20240307-v1:0')
@@ -487,7 +478,7 @@ def read_root():
 def health_check():
     """
     Health check endpoint
-    Returns the current status, version, and availability of AI components
+    Returns the current status, version, Bedrock availability, and AI Engine availability of the API
     """
     logger.info("Health check requested")
     return {
