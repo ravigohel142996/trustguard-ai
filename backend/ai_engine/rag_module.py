@@ -9,13 +9,14 @@ from typing import List, Dict, Optional
 from pathlib import Path
 
 try:
-    from langchain.text_splitter import RecursiveCharacterTextSplitter
-    from langchain.embeddings import HuggingFaceEmbeddings
-    from langchain.vectorstores import FAISS
-    from langchain.docstore.document import Document
+    from langchain_text_splitters import RecursiveCharacterTextSplitter
+    from langchain_community.vectorstores import FAISS
+    from langchain_huggingface import HuggingFaceEmbeddings
+    from langchain_core.documents import Document
     LANGCHAIN_AVAILABLE = True
-except ImportError:
+except ImportError as e:
     LANGCHAIN_AVAILABLE = False
+    import_error = str(e)
 
 logger = logging.getLogger(__name__)
 
@@ -48,11 +49,18 @@ class RAGModule:
         )
         
         # Initialize embeddings model (using a lightweight model)
-        logger.info("Initializing embeddings model...")
-        self.embeddings = HuggingFaceEmbeddings(
-            model_name="sentence-transformers/all-MiniLM-L6-v2",
-            model_kwargs={'device': 'cpu'}
-        )
+        try:
+            logger.info("Initializing embeddings model...")
+            self.embeddings = HuggingFaceEmbeddings(
+                model_name="sentence-transformers/all-MiniLM-L6-v2",
+                model_kwargs={'device': 'cpu'}
+            )
+        except Exception as e:
+            logger.warning(f"Failed to initialize embeddings model: {e}")
+            logger.warning("RAG module will not be available. Continuing without RAG.")
+            self.embeddings = None
+            self.vectorstore = None
+            return
         
         # Initialize or load vector store
         self.vectorstore = None
