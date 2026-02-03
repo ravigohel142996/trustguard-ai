@@ -1,0 +1,36 @@
+Common Scam Patterns and Red Flags
+
+Job Scams:
+- Legitimate employers never ask for payment upfront for job opportunities
+- Real companies don't ask for money for background checks or training materials
+- Be wary of job offers that seem too good to be true with minimal requirements
+- Verify company credentials through official websites
+- Never share personal banking details during initial recruitment
+
+Phishing Attempts:
+- Banks never ask for passwords or PINs via email or SMS
+- Official organizations use proper email domains, not free email services
+- Look for spelling errors and grammatical mistakes in official-looking messages
+- Verify URLs before clicking - hover to see actual destination
+- Real companies don't create urgency to bypass your judgment
+
+Investment Frauds:
+- No legitimate investment guarantees returns
+- High returns with low risk is a major red flag
+- Ponzi schemes promise unrealistic profits
+- Verify investment advisors with regulatory authorities
+- Never invest based solely on social media recommendations
+
+Lottery and Prize Scams:
+- You cannot win a lottery you didn't enter
+- Real lotteries don't ask for fees to claim prizes
+- Legitimate organizations don't demand immediate payment
+- Winners are notified through official channels, not random messages
+- Tax obligations are handled after receiving prizes, not before
+
+Safe Communication Practices:
+- Verify sender identity through official channels
+- Don't share OTPs or passwords with anyone
+- Use two-factor authentication when available
+- Keep software and security updates current
+- Report suspicious activities to authorities

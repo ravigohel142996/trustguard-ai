@@ -4,3 +4,8 @@ fastapi
 uvicorn
 pydantic
 boto3
+langchain
+faiss-cpu
+sentence-transformers
+scikit-learn
+numpy

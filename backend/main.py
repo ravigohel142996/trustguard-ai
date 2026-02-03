@@ -48,6 +48,24 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Import AI Engine
+try:
+    from ai_engine import get_ai_engine
+    AI_ENGINE_AVAILABLE = True
+    logger.info("AI Engine imported successfully")
+except ImportError as e:
+    logger.warning(f"AI Engine not available: {e}")
+    AI_ENGINE_AVAILABLE = False
+
+# Import AI Engine
+try:
+    from ai_engine import get_ai_engine
+    AI_ENGINE_AVAILABLE = True
+    logger.info("AI Engine imported successfully")
+except ImportError as e:
+    logger.warning(f"AI Engine not available: {e}")
+    AI_ENGINE_AVAILABLE = False
+
 # AWS Bedrock Configuration
 AWS_REGION = os.getenv('AWS_DEFAULT_REGION', 'us-east-1')
 BEDROCK_MODEL_ID = os.getenv('BEDROCK_MODEL_ID', 'anthropic.claude-3-haiku-20240307-v1:0')
@@ -169,6 +187,7 @@ class HealthResponse(BaseModel):
     status: str
     version: str
     bedrock_available: bool = Field(default=False, description="Whether AWS Bedrock is available")
+    ai_engine_available: bool = Field(default=False, description="Whether AI Engine is available")
 
 def analyze_with_bedrock(content: str, language: str) -> Optional[Dict]:
     """
@@ -459,6 +478,7 @@ def read_root():
         "endpoints": {
             "health": "/health",
             "analyze": "/analyze",
+            "analyze-ai": "/analyze-ai",
             "docs": "/docs"
         }
     }
@@ -467,13 +487,14 @@ def read_root():
 def health_check():
     """
     Health check endpoint
-    Returns the current status, version, and Bedrock availability of the API
+    Returns the current status, version, and availability of AI components
     """
     logger.info("Health check requested")
     return {
         "status": "healthy",
         "version": "1.0.0",
-        "bedrock_available": bedrock_runtime is not None
+        "bedrock_available": bedrock_runtime is not None,
+        "ai_engine_available": AI_ENGINE_AVAILABLE
     }
 
 @app.post("/analyze", response_model=AnalyzeResponse, tags=["Analysis"])
@@ -524,6 +545,66 @@ def analyze(request: AnalyzeRequest):
         raise
     except Exception as e:
         logger.error(f"Error during analysis: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail="An error occurred while analyzing the content. Please try again."
+        )
+
+@app.post("/analyze-ai", response_model=AnalyzeResponse, tags=["Analysis"])
+def analyze_with_ai_engine(request: AnalyzeRequest):
+    """
+    Analyze text content using full AI Engine (RAG + ML + Trust Calculator)
+    
+    This endpoint uses the complete AI Engine pipeline combining:
+    - RAG (Retrieval-Augmented Generation) with FAISS for document search
+    - ML Classifier for scam probability prediction
+    - Trust Calculator for comprehensive scoring
+    
+    Args:
+        request: AnalyzeRequest containing content and language
+    
+    Returns:
+        AnalyzeResponse with trust_score, risk_level, category, and explanation
+    
+    Raises:
+        HTTPException: If content is invalid or analysis fails
+    """
+    try:
+        # Validate language
+        if request.language not in ["en", "hi"]:
+            logger.warning(f"Invalid language requested: {request.language}")
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid language. Supported languages: en, hi"
+            )
+        
+        # Validate content length
+        if len(request.content.strip()) == 0:
+            logger.warning("Empty content provided")
+            raise HTTPException(
+                status_code=400,
+                detail="Content cannot be empty"
+            )
+        
+        # Use AI Engine if available
+        if AI_ENGINE_AVAILABLE:
+            logger.info("Analyzing with AI Engine")
+            ai_engine = get_ai_engine()
+            result = ai_engine.analyze(request.content, request.language)
+        else:
+            # Fallback to Bedrock, then keyword analysis
+            logger.info("AI Engine not available, falling back to Bedrock")
+            result = analyze_with_bedrock(request.content, request.language)
+            if result is None:
+                logger.info("Bedrock unavailable, falling back to keyword-based analysis")
+                result = analyze_content(request.content, request.language)
+        
+        return AnalyzeResponse(**result)
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error during AI Engine analysis: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=500,
             detail="An error occurred while analyzing the content. Please try again."
