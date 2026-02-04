@@ -46,3 +46,14 @@ TrustGuard AI now supports AWS Bedrock for enhanced AI-powered scam detection. S
 - Troubleshooting guide
 
 Without AWS credentials, the system automatically uses keyword-based analysis.
+
+## RAG (Retrieval Augmented Generation)
+
+TrustGuard AI includes a RAG system that provides context-aware scam detection by retrieving relevant information from trusted documents. Key features:
+
+- **Automatic Context Retrieval**: Searches trusted documents for relevant scam information
+- **Enhanced Detection**: Provides evidence-based analysis using curated knowledge
+- **Fast Caching**: Index is cached to disk for instant subsequent loads
+- **Easy to Extend**: Simply add `.txt` files to `ai_engine/data/trusted_docs/`
+
+See [RAG_INTEGRATION.md](RAG_INTEGRATION.md) for detailed documentation.
