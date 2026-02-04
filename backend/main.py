@@ -46,6 +46,7 @@ from botocore.exceptions import BotoCoreError, ClientError
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from ai_engine.rag import get_rag_system
 from ai_engine.classifier import predict_scam
+from ai_engine.trust_engine import calculate_trust, detect_red_flags
 
 # Configure logging
 logging.basicConfig(
@@ -558,50 +559,56 @@ def analyze(request: AnalyzeRequest):
             logger.info(f"ML classifier score: {ml_score:.4f}")
         except Exception as e:
             logger.warning(f"ML classifier failed: {str(e)}")
-            ml_score = None
+            ml_score = 0.5  # Default to neutral if ML fails
+        
+        # Get RAG confidence score
+        rag_confidence = 0.0
+        if rag_system is not None:
+            try:
+                # Search for relevant passages from trusted documents
+                rag_results = rag_system.search_docs(request.content, top_k=2)
+                if rag_results:
+                    # Use average score as confidence
+                    rag_confidence = sum(r['score'] for r in rag_results) / len(rag_results)
+                    logger.info(f"RAG confidence: {rag_confidence:.4f}")
+            except Exception as e:
+                logger.warning(f"RAG search failed: {str(e)}")
         
         # Try Bedrock analysis first
         logger.info("Attempting analysis with AWS Bedrock")
-        result = analyze_with_bedrock(request.content, request.language)
+        bedrock_result = analyze_with_bedrock(request.content, request.language)
         
         # Fallback to mock analysis if Bedrock fails
-        if result is None:
+        if bedrock_result is None:
             logger.info("Bedrock unavailable, falling back to keyword-based analysis")
-            result = analyze_content(request.content, request.language)
+            bedrock_result = analyze_content(request.content, request.language)
         else:
             logger.info("Successfully analyzed with AWS Bedrock")
         
-        # Incorporate ML score into the result if available
-        if ml_score is not None:
-            # ML score is probability of scam (0-1)
-            # Convert to trust score (0-100, where high = safe)
-            ml_trust_score = int((1 - ml_score) * 100)
-            
-            # Blend ML score with existing result using configured weights
-            original_score = result['trust_score']
-            result['trust_score'] = int(BEDROCK_WEIGHT * original_score + ML_WEIGHT * ml_trust_score)
-            
-            # Update risk level based on new score
-            if result['trust_score'] >= 70:
-                result['risk_level'] = "Safe"
-            elif result['trust_score'] >= 40:
-                result['risk_level'] = "Suspicious"
-            else:
-                result['risk_level'] = "Dangerous"
-            
-            # Add ML scam probability to explanation
-            if request.language == "hi":
-                ml_info = f" ML मॉडल स्कैम संभावना: {ml_score:.2f}"
-            else:
-                ml_info = f" ML scam probability: {ml_score:.2f}"
-            
-            # Ensure proper formatting when appending
-            explanation = result['explanation'].rstrip()
-            if explanation and not explanation[-1] in ('.', '!', '?'):
-                explanation += '.'
-            result['explanation'] = explanation + ml_info
-            
-            logger.info(f"Final trust score after ML adjustment: {result['trust_score']} (original: {original_score}, ML: {ml_trust_score})")
+        # Extract LLM risk level from bedrock result
+        llm_risk = bedrock_result['risk_level']
+        
+        # Detect red flags in content
+        red_flags = detect_red_flags(request.content)
+        logger.info(f"Detected red flags: {red_flags}")
+        
+        # Use Trust Engine to calculate final score
+        trust_result = calculate_trust(
+            llm_risk=llm_risk,
+            ml_score=ml_score,
+            rag_confidence=rag_confidence,
+            red_flags=red_flags
+        )
+        
+        logger.info(f"Trust Engine result - Score: {trust_result['trust_score']}, Risk: {trust_result['risk_level']}")
+        
+        # Prepare final result
+        result = {
+            'trust_score': trust_result['trust_score'],
+            'risk_level': trust_result['risk_level'],
+            'category': bedrock_result['category'],
+            'explanation': trust_result['explanation']
+        }
         
         return AnalyzeResponse(**result)
     
