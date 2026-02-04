@@ -67,6 +67,10 @@ TRUST_SCORE_SAFE = 75
 TRUST_SCORE_SUSPICIOUS = 50
 MAX_EXPLANATION_LENGTH = 500
 
+# ML model blending weights
+BEDROCK_WEIGHT = 0.6  # Weight for Bedrock/keyword analysis
+ML_WEIGHT = 0.4       # Weight for ML model predictions
+
 # Initialize Bedrock client with timeout configuration
 try:
     bedrock_config = Config(
@@ -573,10 +577,9 @@ def analyze(request: AnalyzeRequest):
             # Convert to trust score (0-100, where high = safe)
             ml_trust_score = int((1 - ml_score) * 100)
             
-            # Blend ML score with existing result (weighted average)
-            # Give 40% weight to ML model, 60% to Bedrock/keyword analysis
+            # Blend ML score with existing result using configured weights
             original_score = result['trust_score']
-            result['trust_score'] = int(0.6 * original_score + 0.4 * ml_trust_score)
+            result['trust_score'] = int(BEDROCK_WEIGHT * original_score + ML_WEIGHT * ml_trust_score)
             
             # Update risk level based on new score
             if result['trust_score'] >= 70:
@@ -586,12 +589,17 @@ def analyze(request: AnalyzeRequest):
             else:
                 result['risk_level'] = "Dangerous"
             
-            # Add ML confidence to explanation
+            # Add ML scam probability to explanation
             if request.language == "hi":
-                ml_info = f" ML मॉडल आत्मविश्वास: {ml_score:.2f}"
+                ml_info = f" ML मॉडल स्कैम संभावना: {ml_score:.2f}"
             else:
-                ml_info = f" ML model confidence: {ml_score:.2f}"
-            result['explanation'] = result['explanation'] + ml_info
+                ml_info = f" ML scam probability: {ml_score:.2f}"
+            
+            # Ensure proper formatting when appending
+            explanation = result['explanation'].rstrip()
+            if explanation and not explanation[-1] in '.!?':
+                explanation += '.'
+            result['explanation'] = explanation + ml_info
             
             logger.info(f"Final trust score after ML adjustment: {result['trust_score']} (original: {original_score}, ML: {ml_trust_score})")
         

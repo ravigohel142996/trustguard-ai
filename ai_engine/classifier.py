@@ -83,7 +83,7 @@ def train_model():
     # Create TF-IDF vectorizer
     print("\nCreating TF-IDF vectorizer...")
     vectorizer = TfidfVectorizer(
-        max_features=1000,  # Use top 1000 features
+        max_features=500,  # Limited features to match dataset size
         ngram_range=(1, 2),  # Use unigrams and bigrams
         min_df=2  # Minimum document frequency
     )
@@ -98,8 +98,7 @@ def train_model():
     print("\nTraining Logistic Regression model...")
     model = LogisticRegression(
         max_iter=1000,
-        random_state=42,
-        class_weight='balanced'  # Handle class imbalance
+        random_state=42
     )
     
     model.fit(X_train_tfidf, y_train)
@@ -175,11 +174,12 @@ def predict_scam(text):
     text_tfidf = vectorizer.transform([processed_text])
     
     # Get probability predictions
-    # predict_proba returns [prob_safe, prob_scam]
+    # predict_proba returns probabilities for each class
     probabilities = model.predict_proba(text_tfidf)[0]
     
-    # Return probability of scam class
-    scam_probability = probabilities[1]
+    # Find the index of the 'scam' class
+    scam_index = list(model.classes_).index('scam')
+    scam_probability = probabilities[scam_index]
     
     return float(scam_probability)
 
