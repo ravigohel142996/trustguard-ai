@@ -1,6 +1,6 @@
 """
 TrustGuard AI - RAG (Retrieval Augmented Generation) Module
-Purpose: Load documents, create FAISS index, and search for relevant passages
+Purpose: Load documents, create TF-IDF index, and search for relevant passages
 """
 
 import os
@@ -28,6 +28,11 @@ CACHE_FILE = os.path.join(CACHE_DIR, "rag_cache.pkl")
 CHUNK_SIZE = 500
 CHUNK_OVERLAP = 50
 TOP_K_RESULTS = 3
+
+# TF-IDF Configuration
+# Max features limits vocabulary size for efficiency while maintaining quality
+# 500 is sufficient for scam-related terminology without excessive memory use
+TFIDF_MAX_FEATURES = 500
 
 
 class RAGSystem:
@@ -121,7 +126,7 @@ class RAGSystem:
             
             # Create TF-IDF vectorizer
             self.vectorizer = TfidfVectorizer(
-                max_features=500,
+                max_features=TFIDF_MAX_FEATURES,
                 stop_words='english',
                 ngram_range=(1, 2)
             )

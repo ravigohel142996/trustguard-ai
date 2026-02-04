@@ -211,7 +211,18 @@ def analyze_with_bedrock(content: str, language: str) -> Optional[Dict]:
                     logger.info(f"Found {len(rag_results)} relevant RAG passages")
                     rag_context = "\n\nRelevant Context from Trusted Sources:\n"
                     for i, result in enumerate(rag_results, 1):
-                        rag_context += f"{i}. From {result['source']}: {result['content'][:200]}...\n"
+                        # Truncate at sentence boundary for better context
+                        content_text = result['content']
+                        if len(content_text) > 250:
+                            # Find last sentence ending before 250 chars
+                            truncate_at = 250
+                            for delimiter in ['. ', '! ', '? ', '\n']:
+                                last_pos = content_text[:truncate_at].rfind(delimiter)
+                                if last_pos > 100:  # Ensure we have reasonable content
+                                    truncate_at = last_pos + 1
+                                    break
+                            content_text = content_text[:truncate_at].strip() + "..."
+                        rag_context += f"{i}. From {result['source']}: {content_text}\n"
             except Exception as e:
                 logger.warning(f"Error retrieving RAG context: {str(e)}")
         
