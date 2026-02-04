@@ -33,6 +33,7 @@ import logging
 import os
 import random
 import re
+import sys
 from typing import Dict, List, Optional
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -40,6 +41,10 @@ from pydantic import BaseModel, Field
 import boto3
 from botocore.config import Config
 from botocore.exceptions import BotoCoreError, ClientError
+
+# Add parent directory to path to import ai_engine
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from ai_engine.rag import get_rag_system
 
 # Configure logging
 logging.basicConfig(
@@ -90,6 +95,14 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Initialize RAG system
+try:
+    rag_system = get_rag_system()
+    logger.info("RAG system initialized successfully")
+except Exception as e:
+    logger.warning(f"Failed to initialize RAG system: {str(e)}")
+    rag_system = None
 
 # Risk keywords for boosting detection
 RISK_KEYWORDS = {
@@ -169,10 +182,11 @@ class HealthResponse(BaseModel):
     status: str
     version: str
     bedrock_available: bool = Field(default=False, description="Whether AWS Bedrock is available")
+    rag_available: bool = Field(default=False, description="Whether RAG system is available")
 
 def analyze_with_bedrock(content: str, language: str) -> Optional[Dict]:
     """
-    Analyze content using Amazon Bedrock AI
+    Analyze content using Amazon Bedrock AI with RAG context
     
     Args:
         content: Text content to analyze
@@ -187,10 +201,24 @@ def analyze_with_bedrock(content: str, language: str) -> Optional[Dict]:
         return None
     
     try:
+        # Get RAG context
+        rag_context = ""
+        if rag_system is not None:
+            try:
+                # Search for relevant passages from trusted documents
+                rag_results = rag_system.search_docs(content, top_k=2)
+                if rag_results:
+                    logger.info(f"Found {len(rag_results)} relevant RAG passages")
+                    rag_context = "\n\nRelevant Context from Trusted Sources:\n"
+                    for i, result in enumerate(rag_results, 1):
+                        rag_context += f"{i}. From {result['source']}: {result['content'][:200]}...\n"
+            except Exception as e:
+                logger.warning(f"Error retrieving RAG context: {str(e)}")
+        
         # Construct AI prompt for scam analysis
         if language == "hi":
             prompt = f"""You are a cybersecurity assistant for India.
-
+{rag_context}
 Analyze this content:
 
 "{content}"
@@ -204,7 +232,7 @@ Return:
 Provide your response in Hindi and be specific about the risk level."""
         else:
             prompt = f"""You are a cybersecurity assistant for India.
-
+{rag_context}
 Analyze this content:
 
 "{content}"
@@ -467,13 +495,14 @@ def read_root():
 def health_check():
     """
     Health check endpoint
-    Returns the current status, version, and Bedrock availability of the API
+    Returns the current status, version, Bedrock and RAG availability of the API
     """
     logger.info("Health check requested")
     return {
         "status": "healthy",
         "version": "1.0.0",
-        "bedrock_available": bedrock_runtime is not None
+        "bedrock_available": bedrock_runtime is not None,
+        "rag_available": rag_system is not None
     }
 
 @app.post("/analyze", response_model=AnalyzeResponse, tags=["Analysis"])
