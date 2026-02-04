@@ -45,6 +45,7 @@ from botocore.exceptions import BotoCoreError, ClientError
 # Add parent directory to path to import ai_engine
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from ai_engine.rag import get_rag_system
+from ai_engine.classifier import predict_scam
 
 # Configure logging
 logging.basicConfig(
@@ -65,6 +66,10 @@ TRUST_SCORE_DANGEROUS = 25
 TRUST_SCORE_SAFE = 75
 TRUST_SCORE_SUSPICIOUS = 50
 MAX_EXPLANATION_LENGTH = 500
+
+# ML model blending weights
+BEDROCK_WEIGHT = 0.6  # Weight for Bedrock/keyword analysis
+ML_WEIGHT = 0.4       # Weight for ML model predictions
 
 # Initialize Bedrock client with timeout configuration
 try:
@@ -547,6 +552,14 @@ def analyze(request: AnalyzeRequest):
                 detail="Content cannot be empty"
             )
         
+        # Get ML score using trained classifier
+        try:
+            ml_score = predict_scam(request.content)
+            logger.info(f"ML classifier score: {ml_score:.4f}")
+        except Exception as e:
+            logger.warning(f"ML classifier failed: {str(e)}")
+            ml_score = None
+        
         # Try Bedrock analysis first
         logger.info("Attempting analysis with AWS Bedrock")
         result = analyze_with_bedrock(request.content, request.language)
@@ -557,6 +570,38 @@ def analyze(request: AnalyzeRequest):
             result = analyze_content(request.content, request.language)
         else:
             logger.info("Successfully analyzed with AWS Bedrock")
+        
+        # Incorporate ML score into the result if available
+        if ml_score is not None:
+            # ML score is probability of scam (0-1)
+            # Convert to trust score (0-100, where high = safe)
+            ml_trust_score = int((1 - ml_score) * 100)
+            
+            # Blend ML score with existing result using configured weights
+            original_score = result['trust_score']
+            result['trust_score'] = int(BEDROCK_WEIGHT * original_score + ML_WEIGHT * ml_trust_score)
+            
+            # Update risk level based on new score
+            if result['trust_score'] >= 70:
+                result['risk_level'] = "Safe"
+            elif result['trust_score'] >= 40:
+                result['risk_level'] = "Suspicious"
+            else:
+                result['risk_level'] = "Dangerous"
+            
+            # Add ML scam probability to explanation
+            if request.language == "hi":
+                ml_info = f" ML मॉडल स्कैम संभावना: {ml_score:.2f}"
+            else:
+                ml_info = f" ML scam probability: {ml_score:.2f}"
+            
+            # Ensure proper formatting when appending
+            explanation = result['explanation'].rstrip()
+            if explanation and not explanation[-1] in ('.', '!', '?'):
+                explanation += '.'
+            result['explanation'] = explanation + ml_info
+            
+            logger.info(f"Final trust score after ML adjustment: {result['trust_score']} (original: {original_score}, ML: {ml_trust_score})")
         
         return AnalyzeResponse(**result)
     
