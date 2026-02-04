@@ -554,12 +554,18 @@ def analyze(request: AnalyzeRequest):
             )
         
         # Get ML score using trained classifier
+        ml_score = None
         try:
             ml_score = predict_scam(request.content)
             logger.info(f"ML classifier score: {ml_score:.4f}")
         except Exception as e:
             logger.warning(f"ML classifier failed: {str(e)}")
-            ml_score = 0.5  # Default to neutral if ML fails
+        
+        # If ML classifier is unavailable, use neutral default for calculation
+        # This prevents masking errors while still allowing analysis to proceed
+        if ml_score is None:
+            ml_score = 0.5
+            logger.info("Using neutral ML score (0.5) as classifier is unavailable")
         
         # Get RAG confidence score
         rag_confidence = 0.0

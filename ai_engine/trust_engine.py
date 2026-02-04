@@ -224,10 +224,10 @@ def detect_red_flags(content: str) -> List[str]:
     content_lower = content.lower()
     detected_flags = []
     
-    # Payment-related red flags (check specific patterns first, then general)
+    # Payment-related red flags (check each independently)
     if "pay now" in content_lower:
         detected_flags.append("pay_now")
-    elif any(word in content_lower for word in ["payment required", "send money", "transfer funds", "pay "]):
+    if any(word in content_lower for word in ["payment required", "send money", "transfer funds", "make payment"]):
         detected_flags.append("payment_request")
     
     # Urgency red flags (check each separately for accurate penalty)
