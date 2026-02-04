@@ -224,25 +224,37 @@ def detect_red_flags(content: str) -> List[str]:
     content_lower = content.lower()
     detected_flags = []
     
-    # Payment-related red flags
-    if any(word in content_lower for word in ["pay now", "payment required", "send money", "transfer funds"]):
+    # Payment-related red flags (check specific patterns first, then general)
+    if "pay now" in content_lower:
+        detected_flags.append("pay_now")
+    elif any(word in content_lower for word in ["payment required", "send money", "transfer funds", "pay "]):
         detected_flags.append("payment_request")
     
-    # Urgency red flags
-    if any(word in content_lower for word in ["urgent", "immediately", "right now", "hurry", "limited time", "act now"]):
+    # Urgency red flags (check each separately for accurate penalty)
+    if any(word in content_lower for word in ["urgent", "immediately", "right now", "hurry"]):
         detected_flags.append("urgent")
+    if "limited time" in content_lower:
+        detected_flags.append("limited_time")
+    if "act now" in content_lower:
+        detected_flags.append("act_now")
     
     # Link-related red flags
     if any(word in content_lower for word in ["bit.ly", "tinyurl", "goo.gl", "short.link"]):
         detected_flags.append("short_link")
+    if any(word in content_lower for word in ["suspicious link", "click here", "link.to"]):
+        detected_flags.append("suspicious_link")
     
     # Account verification red flags
     if any(word in content_lower for word in ["verify account", "verify your", "confirm identity", "suspended account"]):
         detected_flags.append("verify_account")
     
-    # Prize/lottery red flags
-    if any(word in content_lower for word in ["claim prize", "you won", "you're a winner", "lottery", "jackpot"]):
+    # Prize/lottery red flags (check each separately)
+    if any(word in content_lower for word in ["claim prize", "claim your prize"]):
+        detected_flags.append("claim_prize")
+    if any(word in content_lower for word in ["you won", "you're a winner", "winner", "congratulations you"]):
         detected_flags.append("winner")
+    if any(word in content_lower for word in ["lottery", "jackpot"]):
+        detected_flags.append("lottery")
     
     # Sensitive information requests
     if any(word in content_lower for word in ["password", "pin", "cvv", "security code"]):
@@ -257,6 +269,8 @@ def detect_red_flags(content: str) -> List[str]:
     # Unofficial domain indicators
     if any(word in content_lower for word in ["unofficial", "temporary link", "alternate site"]):
         detected_flags.append("unofficial_domain")
+    if "no website" in content_lower or "no official" in content_lower:
+        detected_flags.append("no_website")
     
     return detected_flags
 
