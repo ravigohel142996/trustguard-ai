@@ -46,3 +46,6 @@ htmlcov/
 
 # RAG Cache
 ai_engine/cache/
+
+# ML Models
+ai_engine/*.pkl
