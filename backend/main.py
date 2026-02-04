@@ -597,7 +597,7 @@ def analyze(request: AnalyzeRequest):
             
             # Ensure proper formatting when appending
             explanation = result['explanation'].rstrip()
-            if explanation and not explanation[-1] in '.!?':
+            if explanation and not explanation[-1] in ('.', '!', '?'):
                 explanation += '.'
             result['explanation'] = explanation + ml_info
             

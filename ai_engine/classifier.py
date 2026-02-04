@@ -178,7 +178,12 @@ def predict_scam(text):
     probabilities = model.predict_proba(text_tfidf)[0]
     
     # Find the index of the 'scam' class
-    scam_index = list(model.classes_).index('scam')
+    try:
+        scam_index = list(model.classes_).index('scam')
+    except ValueError:
+        # If 'scam' label not found, assume it's the positive class (index 1)
+        scam_index = 1
+    
     scam_probability = probabilities[scam_index]
     
     return float(scam_probability)
