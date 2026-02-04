@@ -4,3 +4,8 @@ fastapi
 uvicorn
 pydantic
 boto3
+langchain
+langchain-community
+langchain-text-splitters
+scikit-learn
+numpy

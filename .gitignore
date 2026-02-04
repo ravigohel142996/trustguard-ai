@@ -43,3 +43,6 @@ Thumbs.db
 .pytest_cache/
 .coverage
 htmlcov/
+
+# RAG Cache
+ai_engine/cache/

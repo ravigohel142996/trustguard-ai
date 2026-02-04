@@ -1,0 +1,30 @@
+Digital Safety Best Practices for Indian Users
+
+General Online Safety:
+- Create strong, unique passwords for each account using a combination of letters, numbers, and symbols.
+- Enable two-factor authentication (2FA) wherever available for added security.
+- Keep your operating system, browsers, and apps updated with the latest security patches.
+- Be cautious about what personal information you share on social media.
+- Use secure, password-protected WiFi networks and avoid public WiFi for sensitive transactions.
+
+Financial Security:
+- Never share your bank account details, credit card numbers, CVV, or OTPs with anyone.
+- Monitor your bank statements regularly for unauthorized transactions.
+- Use virtual payment addresses (UPI) instead of sharing account numbers.
+- Enable transaction alerts via SMS and email from your bank.
+- Set spending limits on cards and digital wallets.
+- Report suspicious transactions to your bank immediately.
+
+Social Engineering Awareness:
+- Scammers create urgency to make you act without thinking - take time to verify.
+- Government officials don't threaten arrests or demand immediate payment over phone.
+- No legitimate organization will ask you to transfer money to personal accounts.
+- Be suspicious of unsolicited calls, messages, or emails asking for personal information.
+- Verify caller identity by calling back through official channels listed on the organization's website.
+
+Protecting Your Digital Identity:
+- Don't click on suspicious links in SMS, WhatsApp, or email messages.
+- Verify QR codes before scanning, especially for payments.
+- Keep your Aadhaar, PAN, and other ID documents secure and share only when absolutely necessary.
+- Be careful about downloading apps from unknown sources.
+- Report cyber fraud to cybercrime.gov.in or call 1930 (national cyber crime helpline).
