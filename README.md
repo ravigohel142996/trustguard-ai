@@ -5,6 +5,7 @@ AI TrustScore – Fake News, Scam & Info Verification for Bharat
 ## Features
 
 - 🤖 **AI-Powered Analysis**: Uses AWS Bedrock with Claude AI for intelligent scam detection
+- 📚 **RAG Integration**: Enhanced with Retrieval Augmented Generation for context-aware analysis
 - 🔄 **Smart Fallback**: Automatically falls back to keyword-based analysis if AI is unavailable
 - 🌐 **Bilingual Support**: Supports both English and Hindi languages
 - ⚡ **Fast API**: Built with FastAPI for high performance
@@ -33,6 +34,7 @@ curl -X POST http://127.0.0.1:8000/analyze \
 
 - [API Usage Guide](API_USAGE.md) - How to use the API
 - [AWS Bedrock Integration](BEDROCK_INTEGRATION.md) - Setup and configure AWS Bedrock for AI-powered analysis
+- [RAG Integration Guide](RAG_INTEGRATION.md) - Retrieval Augmented Generation system documentation
 - [Quick Start Guide](QUICKSTART.md) - Get started quickly
 
 ## AWS Bedrock Integration
@@ -44,3 +46,14 @@ TrustGuard AI now supports AWS Bedrock for enhanced AI-powered scam detection. S
 - Troubleshooting guide
 
 Without AWS credentials, the system automatically uses keyword-based analysis.
+
+## RAG (Retrieval Augmented Generation)
+
+TrustGuard AI includes a RAG system that provides context-aware scam detection by retrieving relevant information from trusted documents. Key features:
+
+- **Automatic Context Retrieval**: Searches trusted documents for relevant scam information
+- **Enhanced Detection**: Provides evidence-based analysis using curated knowledge
+- **Fast Caching**: Index is cached to disk for instant subsequent loads
+- **Easy to Extend**: Simply add `.txt` files to `ai_engine/data/trusted_docs/`
+
+See [RAG_INTEGRATION.md](RAG_INTEGRATION.md) for detailed documentation.
